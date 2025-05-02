@@ -4,10 +4,19 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "run-local": "sam local invoke MyFunction --event test/trello.json --env-vars env.json --profile vahelp --debug",
+    "deploy": "sam deploy --profile vahelp",
+    "setup-dynamodb": "chmod +x ./setup-local-dynamodb.sh && ./setup-local-dynamodb.sh",
+    "dev": "npm run setup-dynamodb && npm run run-local"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.529.1",
+    "@aws-sdk/lib-dynamodb": "^3.529.1",
+    "@aws-sdk/client-lambda": "^3.529.1"
+  }
 }

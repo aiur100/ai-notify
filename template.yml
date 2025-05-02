@@ -22,3 +22,30 @@ Resources:
           TRELLO_BOARD_ID: XXX
           TRELLO_CALLBACK_URL: XXX
           TESTING: XX
+          EVENT_BATCH_TABLE: !Ref EventBatchTable
+          MAX_BATCH_SIZE: 5
+          IS_LOCAL: true
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EventBatchTable
+      Events:
+        WebhookAPI:
+          Type: Api
+          Properties:
+            Path: /webhook
+            Method: post
+
+  EventBatchTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: event-batch-table
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: channelId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: channelId
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true

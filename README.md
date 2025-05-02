@@ -9,7 +9,9 @@ This service is designed to run as an AWS Lambda function that:
 1. Receives webhook events from various sources (GitHub, Trello)
 2. Uses OpenAI GPT-4o to generate formatted Slack messages based on event content
 3. Determines the appropriate Slack channel based on event content
-4. Posts the formatted message to the selected Slack channel using Block Kit
+4. Batches up to 5 events by target channel (except GitHub workflow failures)
+5. Creates summarized messages for batched events
+6. Posts the formatted message to the selected Slack channel using Block Kit
 
 ## Project Structure
 
@@ -45,6 +47,32 @@ pasley-assist/
    cp env.sample.json env.json
    ```
 
+## Event Batching System
+
+The webhook handler includes an event batching system that groups events by Slack channel and sends a summarized message once a batch is complete.
+
+### Key Features
+
+- Events are batched by target Slack channel
+- Batch size is configurable (default: 5 events)
+- GitHub workflow failures are sent immediately without batching
+- Uses DynamoDB to store event batches
+- Automatic batch summarization using OpenAI
+
+### How It Works
+
+1. When a webhook event is received, the system determines which Slack channel it should go to
+2. The event is added to a batch for that channel in DynamoDB
+3. If the batch reaches the configured size (5 events), all events are summarized into a single message
+4. The summary is posted to the appropriate Slack channel
+5. Special case: GitHub workflow failures bypass batching and are sent immediately
+
+### DynamoDB Table Structure
+
+- **Table Name**: `event-batch-table`
+- **Primary Key**: `channelId` (String)
+- **TTL**: 24 hours
+
 ## Environment Variables
 
 The following environment variables are required:
@@ -59,6 +87,8 @@ The following environment variables are required:
 - `TRELLO_BOARD_ID`: ID of the Trello board to monitor
 - `TRELLO_CALLBACK_URL`: URL for Trello callbacks (your Lambda URL)
 - `TESTING`: When set to "true", all notifications are routed to the BOT_TEST_CHANNEL regardless of content
+- `EVENT_BATCH_TABLE`: Name of the DynamoDB table for event batching
+- `MAX_BATCH_SIZE`: Maximum number of events to batch before sending (default: 5)
 
 ## Deployment to AWS Lambda
 
