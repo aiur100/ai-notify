@@ -1,0 +1,39 @@
+{
+    "version": "2.0",
+    "routeKey": "$default",
+    "rawPath": "/",
+    "rawQueryString": "",
+    "headers": {
+      "x-amzn-tls-cipher-suite": "TLS_AES_128_GCM_SHA256",
+      "content-length": "5172",
+      "x-amzn-tls-version": "TLSv1.3",
+      "x-amzn-trace-id": "Self=1-6814bd10-637a528b1f2e00cc73d95cee;Root=1-6814bd10-5b60217b053305235c24da80",
+      "x-forwarded-proto": "https",
+      "host": "zvexfdxdosrn3iaeobjdc3gwmu0rwvbq.lambda-url.us-east-1.on.aws",
+      "x-forwarded-port": "443",
+      "content-type": "application/json",
+      "x-trello-webhook": "B73nc9U+fM8fnwHO0fSH1Twlkks=",
+      "x-forwarded-for": "104.192.142.248",
+      "user-agent": "Trello"
+    },
+    "requestContext": {
+      "accountId": "anonymous",
+      "apiId": "zvexfdxdosrn3iaeobjdc3gwmu0rwvbq",
+      "domainName": "zvexfdxdosrn3iaeobjdc3gwmu0rwvbq.lambda-url.us-east-1.on.aws",
+      "domainPrefix": "zvexfdxdosrn3iaeobjdc3gwmu0rwvbq",
+      "http": {
+        "method": "POST",
+        "path": "/",
+        "protocol": "HTTP/1.1",
+        "sourceIp": "104.192.142.248",
+        "userAgent": "Trello"
+      },
+      "requestId": "af8c9d53-c262-409b-a045-88cbbe1fc7ad",
+      "routeKey": "$default",
+      "stage": "$default",
+      "time": "02/May/2025:12:39:44 +0000",
+      "timeEpoch": 1746189584348
+    },
+    "body": "{\"model\":{\"id\":\"67c75f61ec95347b5ca7a1c4\",\"name\":\"Lympha Press Agent\",\"desc\":\"\",\"descData\":null,\"closed\":false,\"idOrganization\":\"60fc307dfd75d65d38cec5f3\",\"idEnterprise\":null,\"pinned\":false,\"url\":\"https://trello.com/b/VGXHcAQ0/lympha-press-agent\",\"shortUrl\":\"https://trello.com/b/VGXHcAQ0\",\"prefs\":{\"permissionLevel\":\"org\",\"hideVotes\":false,\"voting\":\"disabled\",\"comments\":\"members\",\"invitations\":\"members\",\"selfJoin\":true,\"cardCovers\":true,\"showCompleteStatus\":true,\"cardCounts\":false,\"isTemplate\":false,\"cardAging\":\"regular\",\"calendarFeedEnabled\":false,\"hiddenPluginBoardButtons\":[],\"switcherViews\":[{\"viewType\":\"Board\",\"enabled\":true},{\"viewType\":\"Table\",\"enabled\":true},{\"viewType\":\"Calendar\",\"enabled\":false},{\"viewType\":\"Dashboard\",\"enabled\":false},{\"viewType\":\"Timeline\",\"enabled\":false},{\"viewType\":\"Map\",\"enabled\":false}],\"background\":\"67c7399a2264bb90069332bb\",\"backgroundColor\":null,\"backgroundDarkColor\":null,\"backgroundImage\":\"https://trello-backgrounds.s3.amazonaws.com/SharedBackground/original/0d1dd16dfecd2a63e531f0b1d8092eb6/photo-1739614621579-8f8f396c7412\",\"backgroundDarkImage\":null,\"backgroundImageScaled\":[{\"width\":140,\"height\":93,\"url\":\"https://trello-backgrounds.s3.amazonaws.com/SharedBackground/140x93/aa915ee618f6ac19371484870cb6d393/photo-1739614621579-8f8f396c7412.webp\"},{\"width\":256,\"height\":170,\"url\":\"https://trello-backgrounds.s3.amazonaws.com/SharedBackground/256x170/aa915ee618f6ac19371484870cb6d393/photo-1739614621579-8f8f396c7412.webp\"},{\"width\":480,\"height\":319,\"url\":\"https://trello-backgrounds.s3.amazonaws.com/SharedBackground/480x319/aa915ee618f6ac19371484870cb6d393/photo-1739614621579-8f8f396c7412.webp\"},{\"width\":960,\"height\":638,\"url\":\"https://trello-backgrounds.s3.amazonaws.com/SharedBackground/960x638/aa915ee618f6ac19371484870cb6d393/photo-1739614621579-8f8f396c7412.webp\"},{\"width\":1024,\"height\":680,\"url\":\"https://trello-backgrounds.s3.amazonaws.com/SharedBackground/1024x680/aa915ee618f6ac19371484870cb6d393/photo-1739614621579-8f8f396c7412.webp\"},{\"width\":1280,\"height\":851,\"url\":\"https://trello-backgrounds.s3.amazonaws.com/SharedBackground/1280x851/aa915ee618f6ac19371484870cb6d393/photo-1739614621579-8f8f396c7412.webp\"},{\"width\":1920,\"height\":1276,\"url\":\"https://trello-backgrounds.s3.amazonaws.com/SharedBackground/1920x1276/aa915ee618f6ac19371484870cb6d393/photo-1739614621579-8f8f396c7412.webp\"},{\"width\":2048,\"height\":1361,\"url\":\"https://trello-backgrounds.s3.amazonaws.com/SharedBackground/2048x1361/aa915ee618f6ac19371484870cb6d393/photo-1739614621579-8f8f396c7412.webp\"},{\"width\":2408,\"height\":1600,\"url\":\"https://trello-backgrounds.s3.amazonaws.com/SharedBackground/2408x1600/aa915ee618f6ac19371484870cb6d393/photo-1739614621579-8f8f396c7412.webp\"},{\"width\":2560,\"height\":1701,\"url\":\"https://trello-backgrounds.s3.amazonaws.com/SharedBackground/2560x1701/aa915ee618f6ac19371484870cb6d393/photo-1739614621579-8f8f396c7412.webp\"}],\"backgroundTile\":false,\"backgroundBrightness\":\"dark\",\"sharedSourceUrl\":\"https://images.unsplash.com/photo-1739614621579-8f8f396c7412?ixid=M3w3MDY2fDB8MXxjb2xsZWN0aW9ufDZ8MzE3MDk5fHx8fHwyfHwxNzQxMTA5NjIyfA&ixlib=rb-4.0.3&w=2560&h=2048&q=90\",\"backgroundBottomColor\":\"#0f0f11\",\"backgroundTopColor\":\"#212b29\",\"canBePublic\":true,\"canBeEnterprise\":true,\"canBeOrg\":true,\"canBePrivate\":true,\"canInvite\":true},\"labelNames\":{\"green\":\"EPIC\",\"yellow\":\"\",\"orange\":\"\",\"red\":\"\",\"purple\":\"Research\",\"blue\":\"UI/UX\",\"sky\":\"\",\"lime\":\"\",\"pink\":\"\",\"black\":\"\",\"green_dark\":\"API\",\"yellow_dark\":\"\",\"orange_dark\":\"Chore\",\"red_dark\":\"\",\"purple_dark\":\"\",\"blue_dark\":\"\",\"sky_dark\":\"\",\"lime_dark\":\"\",\"pink_dark\":\"DevOps\",\"black_dark\":\"\",\"green_light\":\"\",\"yellow_light\":\"\",\"orange_light\":\"\",\"red_light\":\"\",\"purple_light\":\"\",\"blue_light\":\"\",\"sky_light\":\"\",\"lime_light\":\"\",\"pink_light\":\"\",\"black_light\":\"\"}},\"action\":{\"id\":\"6814bd00f05c0f91cbc135df\",\"idMemberCreator\":\"679110ea7c6a7123cb1ae0cb\",\"data\":{\"card\":{\"idLabels\":[\"67d2dad4dcf20799e46901ba\",\"67d2dae611bfadb805c1f0d4\"],\"id\":\"6814bc3cd16f5a2520b1f8df\",\"name\":\"Automate Document Processing Pipeline For Many Cases\",\"idShort\":23,\"shortLink\":\"yM6j4QSz\"},\"old\":{\"idLabels\":[\"67d2dad4dcf20799e46901ba\",\"67d2dae611bfadb805c1f0d4\"]},\"board\":{\"id\":\"67c75f61ec95347b5ca7a1c4\",\"name\":\"Lympha Press Agent\",\"shortLink\":\"VGXHcAQ0\"},\"list\":{\"id\":\"67c75f9cf5d993ea1c60bad9\",\"name\":\"Todo\"}},\"appCreator\":null,\"type\":\"updateCard\",\"date\":\"2025-05-02T12:39:28.293Z\",\"limits\":null,\"display\":{\"translationKey\":\"unknown\",\"entities\":{\"memberCreator\":{\"type\":\"member\",\"id\":\"679110ea7c6a7123cb1ae0cb\",\"username\":\"rdelaf\",\"text\":\"Raúl de la Fuente\"}}},\"memberCreator\":{\"id\":\"679110ea7c6a7123cb1ae0cb\",\"activityBlocked\":false,\"avatarHash\":\"1e66790c4d386ba6ee6baa6a0ded26b2\",\"avatarUrl\":\"https://trello-members.s3.amazonaws.com/679110ea7c6a7123cb1ae0cb/1e66790c4d386ba6ee6baa6a0ded26b2\",\"fullName\":\"Raúl de la Fuente\",\"idMemberReferrer\":null,\"initials\":\"RF\",\"nonPublic\":{},\"nonPublicAvailable\":true,\"username\":\"rdelaf\"}},\"webhook\":{\"id\":\"681487e44b69d22ddc4ce453\",\"description\":\"\",\"idModel\":\"67c75f61ec95347b5ca7a1c4\",\"callbackURL\":\"https://zvexfdxdosrn3iaeobjdc3gwmu0rwvbq.lambda-url.us-east-1.on.aws/\",\"active\":true,\"consecutiveFailures\":0,\"firstConsecutiveFailDate\":null}}",
+    "isBase64Encoded": false
+  }

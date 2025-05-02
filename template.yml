@@ -1,0 +1,24 @@
+# SAM template for deploying Lambda function with API Gateway endpoint
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  MyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler  # adjust to match your file/function
+      Runtime: nodejs22.x     # or python3.11, etc.
+      CodeUri: ./
+      MemorySize: 128
+      Timeout: 30
+      Environment:
+        Variables:
+          OPENAI_API_KEY: XXX
+          REDLINE_CHANNEL_WEBHOOK: XXX
+          LYMPHAPRESS_CHANNEL_WEBHOOK: XXX
+          BOT_TEST_CHANNEL_WEBHOOK: XXX
+          ENVIRONMENT: XX
+          TRELLO_KEY: XXX
+          TRELLO_TOKEN: XXX
+          TRELLO_BOARD_ID: XXX
+          TRELLO_CALLBACK_URL: XXX
+          TESTING: XX
