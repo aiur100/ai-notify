@@ -50,14 +50,17 @@ export const generateSlackMessage = async (event, source) => {
   };
   
   // Create a prompt for the AI to generate a rich Slack message
-  const prompt = `Create a concise, positive Slack message about this ${eventType} using Slack Block Kit formatting.
+  const prompt = `
+  
+Create a concise, slack message about this ${eventType} using Slack Block Kit formatting.
+The goal is to keep our development team informed, so be concise and to the point is important. 
 
 Event details:
 ${eventData}
 
 Requirements:
 1. Use the Slack Block Kit format to create a visually appealing message
-2. Include relevant details that software team members would find useful
+2. Include relevant details that software team members would find useful, but be as concise as possible as well.
 3. Use a few meaningful emojis and maintain a fun, positive tone
 4. Include a relevant joke or witty comment if appropriate
 5. Be creative with the formatting, using appropriate block types
