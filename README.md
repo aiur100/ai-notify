@@ -6,26 +6,31 @@ A webhook handler service that processes events from different sources (GitHub, 
 
 This service is designed to run as an AWS Lambda function that:
 
-1. Receives webhook events from various sources
-2. Uses OpenAI to generate formatted Slack messages based on event content
+1. Receives webhook events from various sources (GitHub, Trello)
+2. Uses OpenAI GPT-4o to generate formatted Slack messages based on event content
 3. Determines the appropriate Slack channel based on event content
-4. Posts the formatted message to the selected Slack channel
+4. Posts the formatted message to the selected Slack channel using Block Kit
 
 ## Project Structure
 
 ```
 pasley-assist/
 ├── agents.mjs           # Agent definitions for OpenAI interactions
-├── backup.sh            # Script to create a zip backup for Lambda deployment
 ├── design_docs/         # Project design documentation
-│   └── v1_design.md     # Version 1 design specifications
+│   ├── v1_design.md     # Version 1 design specifications
+│   └── v2_design.md     # Version 2 design specifications
 ├── index.mjs            # Main Lambda handler function
 ├── logger.mjs           # Logging utility
 ├── openai.mjs           # OpenAI API integration
 ├── package.json         # Project dependencies
+├── slack-block-kit-docs.md # Slack Block Kit documentation
 ├── slackRouter.mjs      # Slack message routing logic
-├── test.mjs             # Test utilities
-└── trello.mjs           # Trello webhook handling
+├── template.yml         # SAM template for Lambda deployment
+├── test/                # Test event data
+│   ├── github.json      # Sample GitHub webhook payload
+│   └── trello.json      # Sample Trello webhook payload
+├── trello.mjs           # Trello webhook handling and API integration
+└── zip_lambda.sh        # Script to create a zip package for Lambda deployment
 ```
 
 ## Setup
@@ -53,6 +58,7 @@ The following environment variables are required:
 - `TRELLO_TOKEN`: Your Trello API token
 - `TRELLO_BOARD_ID`: ID of the Trello board to monitor
 - `TRELLO_CALLBACK_URL`: URL for Trello callbacks (your Lambda URL)
+- `TESTING`: When set to "true", all notifications are routed to the BOT_TEST_CHANNEL regardless of content
 
 ## Deployment to AWS Lambda
 
@@ -82,6 +88,8 @@ This script creates a timestamped zip file containing all necessary code files w
    - Handler: index.handler
    - Memory: 256 MB (minimum recommended)
    - Timeout: 30 seconds (adjust based on needs)
+   - URL Configuration: Enable function URL (for webhook endpoints)
+   - Response Streaming: Enable (this Lambda uses streamified responses)
 
 3. **Environment Variables**: Configure all required environment variables in the Lambda console
 
@@ -89,14 +97,21 @@ This script creates a timestamped zip file containing all necessary code files w
 
 
 **REQUIRES AWS SAM CLI INSTALLED**
+
+The project includes sample event data in the `test/` directory for both GitHub and Trello webhooks.
+
 ```
 sam local invoke MyFunction --event test/trello.json --env-vars env.json
 sam local invoke MyFunction --event test/github.json --env-vars env.json
 ```
+
+For Trello, the service includes functionality to create and manage webhooks for multiple Trello boards. The `trello.mjs` file contains functions to:
+- Create webhooks for specific Trello boards
+- Fetch board information
+- Process webhook events from Trello
 
 ## Contributing
 
 1. Create a feature branch
 2. Make your changes
 3. Submit a pull request
-# ai-notify
