@@ -91,6 +91,7 @@ This script creates a timestamped zip file containing all necessary code files w
 **REQUIRES AWS SAM CLI INSTALLED**
 ```
 sam local invoke MyFunction --event test/trello.json --env-vars env.json
+sam local invoke MyFunction --event test/github.json --env-vars env.json
 ```
 
 ## Contributing
