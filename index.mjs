@@ -1,4 +1,3 @@
-import { callOpenAI } from './openai.mjs';
 import { generateSlackMessage, determineSlackChannel } from './agents.mjs';
 
 /**
@@ -67,6 +66,7 @@ export const slackChannels = {
   'rl-wholesale-redline': process.env.REDLINE_CHANNEL_WEBHOOK,
   'lymphapress': process.env.LYMPHAPRESS_CHANNEL_WEBHOOK,
   'bottest': process.env.BOT_TEST_CHANNEL_WEBHOOK,
+  'pasley hill': process.env.BOT_TEST_CHANNEL_WEBHOOK,
 };
 
 export const handler = awslambda.streamifyResponse(async (event, responseStream, context) => {

@@ -12,8 +12,7 @@ export const callOpenAI = async (prompt, model = 'o4-mini') => {
       },
       body: JSON.stringify({
         model,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7
+        messages: [{ role: 'user', content: prompt }]
       })
     });
   

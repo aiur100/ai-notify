@@ -93,6 +93,13 @@ This script creates a timestamped zip file containing all necessary code files w
 
 3. **Environment Variables**: Configure all required environment variables in the Lambda console
 
+--- 
+Deploy to AWS Lambda 
+- This is mostly for Chris. 
+```
+aws lambda update-function-code --function-name "alertSystem" --zip-file "fileb://pasley-assist_lambda_20250505_105222.zip" --region us-east-1 --profile vahelp`
+```
+
 ## Local Testing
 
 
