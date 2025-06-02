@@ -101,6 +101,8 @@ Respond with a JSON object that contains:
   return formattedMessage;
 };
 
+import { detectProjectFromContent } from './projectDetection.mjs';
+
 /**
  * Determines which Slack channel webhook to use based on event data and source
  * @param {Object} event - The webhook event object
@@ -111,6 +113,22 @@ Respond with a JSON object that contains:
 export const determineSlackChannel = async (event, source, slackChannels) => {
   if(process.env.TESTING === "true"){
     return slackChannels.bottest;
+  }
+  
+  // First try to detect project from content
+  const detectedProject = detectProjectFromContent(event, source);
+  if (detectedProject) {
+    console.log(`Project detected from content: ${detectedProject}`);
+    
+    // Find the channel that matches this project
+    const channelKey = Object.keys(slackChannels).find(key => 
+      key.includes(detectedProject) || detectedProject.includes(key)
+    );
+    
+    if (channelKey) {
+      console.log(`Using content-detected channel: ${channelKey}`);
+      return slackChannels[channelKey];
+    }
   }
   // Define the schema for structured output
   const responseSchema = {
@@ -137,6 +155,12 @@ Available channels: ${Object.keys(slackChannels).join(', ')}
 
 Event details:
 ${JSON.stringify(event.body || event, null, 2)}
+
+IMPORTANT GUIDELINES:
+1. If the event mentions "lymphapress", "lympha", "REVO", or "compression therapy", it should go to the lymphapress channel.
+2. If the event mentions "redline", "red line", or "automotive", it should go to the redline channel.
+3. If the event mentions "silo", "silo-down", or "marketing campaign", it should go to the silo-down channel.
+4. If the event mentions "pasley", "pasley-hill", or "consulting", it should go to the pasley-hill channel.
 
 Based on the content and context of this event, select the most appropriate channel.
 Respond with a JSON object that strictly follows this format:

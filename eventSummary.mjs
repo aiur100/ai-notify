@@ -101,32 +101,7 @@ Respond with a JSON object that contains:
   return formattedMessage;
 };
 
-/**
- * Gets the project name from a Slack webhook URL
- * @param {string} webhookUrl - The Slack webhook URL
- * @param {Object} slackChannels - Object mapping channel names to webhook URLs
- * @returns {string} - The project name
- */
-export const getProjectNameFromWebhook = (webhookUrl, slackChannels) => {
-  // Find the channel name that corresponds to this webhook URL
-  const channelEntry = Object.entries(slackChannels).find(([_, url]) => url === webhookUrl);
-  
-  if (!channelEntry) {
-    return 'unknown';
-  }
-  
-  const channelName = channelEntry[0];
-  
-  // Map channel names to project names
-  // This is a simple mapping - you might need to customize this based on your naming conventions
-  if (channelName.includes('redline')) return 'redline';
-  if (channelName.includes('lymphapress')) return 'lymphapress';
-  if (channelName.includes('silo-down')) return 'silo-down';
-  if (channelName.includes('pasley-hill')) return 'pasley-hill';
-  
-  // Default to the channel name if no specific mapping
-  return channelName;
-};
+// getProjectNameFromWebhook function has been moved to projectDetection.mjs
 
 /**
  * Determines if we should send a summary based on event count or time threshold

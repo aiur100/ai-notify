@@ -1,6 +1,7 @@
 import { generateSlackMessage, determineSlackChannel } from './agents.mjs';
 import { createDynamoClient, storeEvent, getAllProjectEvents, batchDeleteEvents } from './dynamoUtils.mjs';
-import { generateEventSummary, getProjectNameFromWebhook, shouldSendSummary } from './eventSummary.mjs';
+import { generateEventSummary, shouldSendSummary } from './eventSummary.mjs';
+import { determineProjectName } from './projectDetection.mjs';
 
 /**
  * Identifies the source of a webhook event
@@ -172,13 +173,26 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream,
         for (const projectName of projectNames) {
             try {
                 // Find the webhook URL for this project
-                const channelKey = Object.keys(slackChannels).find(key => key.includes(projectName));
+                // Look for exact matches first, then partial matches
+                let channelKey = Object.keys(slackChannels).find(key => key === projectName);
+                
+                // If no exact match, try partial match
+                if (!channelKey) {
+                    channelKey = Object.keys(slackChannels).find(key => key.includes(projectName));
+                }
+                
+                // If still no match, try looking for the project name in the channel key
+                if (!channelKey) {
+                    channelKey = Object.keys(slackChannels).find(key => projectName.includes(key));
+                }
+                
                 if (!channelKey) {
                     console.log(`No webhook URL found for project ${projectName}, skipping`);
                     continue;
                 }
                 
                 const webhookUrl = slackChannels[channelKey];
+                console.log(`Using channel ${channelKey} for project ${projectName}`);
                 
                 // Process events for this project
                 const result = await processProjectEvents({
@@ -212,8 +226,8 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream,
     console.log("Selected webhook URL:", webhookUrl);
     
     try {
-        // Get project name from webhook URL
-        const projectName = getProjectNameFromWebhook(webhookUrl, slackChannels);
+        // Get project name by analyzing both event content and webhook URL
+        const projectName = determineProjectName(event, source, webhookUrl, slackChannels);
         console.log("Project name:", projectName);
         
         // Store the event in DynamoDB
