@@ -1,0 +1,11 @@
+{
+  "eventType": "user_action",
+  "userId": "user123",
+  "action": "login",
+  "timestamp": "2025-06-02T14:36:39-04:00",
+  "metadata": {
+    "ipAddress": "192.168.1.1",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
+    "location": "New York"
+  }
+}

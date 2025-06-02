@@ -71,6 +71,8 @@ export const slackChannels = {
   'silo-down-marketing': process.env.SILO_DOWN_CHANNEL_WEBHOOK,
 };
 
+const projectNames = ['redline', 'lymphapress', 'silo-down', 'pasley-hill'];
+
 export const handler = awslambda.streamifyResponse(async (event, responseStream, context) => {
     console.log("Received event:", JSON.stringify(event, null, 2));
     const source = identifyWebhookSource(event);
