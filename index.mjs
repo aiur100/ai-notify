@@ -1,4 +1,6 @@
 import { generateSlackMessage, determineSlackChannel } from './agents.mjs';
+import { createDynamoClient, storeEvent, getAllProjectEvents, batchDeleteEvents } from './dynamoUtils.mjs';
+import { generateEventSummary, getProjectNameFromWebhook, shouldSendSummary } from './eventSummary.mjs';
 
 /**
  * Identifies the source of a webhook event
@@ -91,12 +93,64 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream,
     const webhookUrl = await determineSlackChannel(event, source, slackChannels);
     console.log("Selected webhook URL:", webhookUrl);
     
-    // Post to the determined Slack channel
-    try {
-        const slackResponse = await postToSlack(webhookUrl, message);
-        console.log("Posted to Slack:", slackResponse);
-    } catch (error) {
-        console.error("Error posting to Slack:", error);
-    }
+    // Create DynamoDB client
+    const dynamoClient = createDynamoClient({ region: 'us-east-1' });
     
+    try {
+        // Get project name from webhook URL
+        const projectName = getProjectNameFromWebhook(webhookUrl, slackChannels);
+        console.log("Project name:", projectName);
+        
+        // Store the event in DynamoDB
+        const storeResult = await storeEvent({
+            projectName,
+            event: {
+                source,
+                message,
+                originalEvent: event,
+                timestamp: new Date().toISOString()
+            },
+            dynamoClient
+        });
+        console.log("Stored event in DynamoDB:", storeResult);
+        
+        // Get all events for this project
+        const getResult = await getAllProjectEvents({
+            projectName,
+            dynamoClient
+        });
+        console.log(`Retrieved ${getResult.events.length} events for project ${projectName}`);
+        
+        // Check if we should send a summary (5 or more events)
+        if (shouldSendSummary(getResult.events)) {
+            console.log(`Generating summary for ${getResult.events.length} events`);
+            
+            // Generate a summary report
+            const summaryMessage = await generateEventSummary(getResult.events, projectName);
+            
+            // Post the summary to Slack
+            const slackResponse = await postToSlack(webhookUrl, summaryMessage);
+            console.log("Posted summary to Slack:", slackResponse);
+            
+            // Delete the processed events from DynamoDB
+            const deleteResult = await batchDeleteEvents({
+                events: getResult.events,
+                dynamoClient
+            });
+            console.log("Deleted processed events:", deleteResult);
+        } else {
+            // Not enough events for a summary yet, just log the count
+            console.log(`Only ${getResult.events.length} events for ${projectName}, not sending summary yet`);
+        }
+    } catch (error) {
+        console.error("Error processing event:", error);
+        
+        // If there's an error, still try to post the original message to Slack as a fallback
+        try {
+            const slackResponse = await postToSlack(webhookUrl, message);
+            console.log("Posted original message to Slack as fallback:", slackResponse);
+        } catch (slackError) {
+            console.error("Error posting to Slack:", slackError);
+        }
+    }
 });
