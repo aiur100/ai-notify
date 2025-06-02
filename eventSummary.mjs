@@ -28,7 +28,7 @@ export const generateEventSummary = async (events, projectName) => {
   // Extract event data for the AI prompt
   const eventData = events.map(event => {
     return {
-      timestamp: new Date(event.eventTime).toISOString(),
+      timestamp: new Date(event.eventTime * 1000).toISOString(), // Convert seconds to milliseconds for Date constructor
       data: event.data
     };
   });

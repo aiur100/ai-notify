@@ -38,17 +38,17 @@ export async function storeEvent({ projectName, event, dynamoClient }) {
   // Use provided client or create a default one
   const docClient = dynamoClient || createDynamoClient({ profile: 'pasley_hill', region: 'us-east-1' });
   
-  // Current time in milliseconds (unix timestamp)
-  const currentTime = Date.now();
+  // Current time in seconds (unix timestamp)
+  const currentTimeSeconds = Math.floor(Date.now() / 1000);
   
   // TTL set to 10 minutes from now (in seconds)
-  const ttl = Math.floor(currentTime / 1000) + (10 * 60);
+  const ttl = currentTimeSeconds + (10 * 60);
   
   const params = {
     TableName: 'team-events',
     Item: {
       projectName, // Partition key
-      eventTime: currentTime, // Sort key
+      eventTime: currentTimeSeconds, // Sort key (in seconds)
       data: event, // Store the event data as a map
       ttl // TTL attribute for automatic deletion
     }
@@ -60,7 +60,7 @@ export async function storeEvent({ projectName, event, dynamoClient }) {
     return {
       success: true,
       result,
-      timestamp: currentTime
+      timestamp: currentTimeSeconds
     };
   } catch (error) {
     console.error('Error storing event:', error);
