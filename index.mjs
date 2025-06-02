@@ -75,15 +75,133 @@ export const slackChannels = {
 
 const projectNames = ['redline', 'lymphapress', 'silo-down', 'pasley-hill'];
 
+/**
+ * Processes events for a single project
+ * @param {Object} params - Processing parameters
+ * @param {string} params.projectName - The project name to process
+ * @param {string} params.webhookUrl - The Slack webhook URL for this project
+ * @param {Object} params.dynamoClient - DynamoDB Document Client
+ * @param {boolean} params.isScheduledCheck - Whether this is a scheduled check
+ * @returns {Promise<Object>} - Processing result
+ */
+async function processProjectEvents({ projectName, webhookUrl, dynamoClient, isScheduledCheck = false }) {
+    console.log(`Processing events for project: ${projectName}, scheduled check: ${isScheduledCheck}`);
+    
+    // Get all events for this project
+    const getResult = await getAllProjectEvents({
+        projectName,
+        dynamoClient
+    });
+    console.log(`Retrieved ${getResult.events.length} events for project ${projectName}`);
+    
+    // Check if we should send a summary based on count or time threshold
+    if (shouldSendSummary(getResult.events, { isScheduledCheck })) {
+        console.log(`Generating summary for ${getResult.events.length} events`);
+        
+        // Generate a summary report
+        const summaryMessage = await generateEventSummary(getResult.events, projectName);
+        
+        // Post the summary to Slack
+        const slackResponse = await postToSlack(webhookUrl, summaryMessage);
+        console.log("Posted summary to Slack:", slackResponse);
+        
+        // Delete the processed events from DynamoDB
+        const deleteResult = await batchDeleteEvents({
+            events: getResult.events,
+            dynamoClient
+        });
+        console.log("Deleted processed events:", deleteResult);
+        
+        return {
+            success: true,
+            action: 'summary_sent',
+            eventCount: getResult.events.length
+        };
+    } else {
+        // Not enough events for a summary yet, just log the count
+        console.log(`Only ${getResult.events.length} events for ${projectName}, not sending summary yet`);
+        return {
+            success: true,
+            action: 'no_action_needed',
+            eventCount: getResult.events.length
+        };
+    }
+}
+
+/**
+ * Checks if an event is a scheduled check event
+ * @param {Object} event - The Lambda event
+ * @returns {boolean} - True if this is a scheduled check event
+ */
+function isScheduledCheckEvent(event) {
+    // Check if this is an EventBridge scheduled event
+    if (event.source === 'aws.events' && event['detail-type'] === 'Scheduled Event') {
+        return true;
+    }
+    
+    // Check for our custom scheduled check flag
+    if (event.isScheduledCheck === true) {
+        return true;
+    }
+    
+    return false;
+}
+
 export const handler = awslambda.streamifyResponse(async (event, responseStream, context) => {
     console.log("Received event:", JSON.stringify(event, null, 2));
-    const source = identifyWebhookSource(event);
-    console.log("Webhook source:", source);
-
+    
     // Start by sending an immediate response
     responseStream.setContentType('application/json');
     responseStream.write(JSON.stringify({ message: "Webhook received, processing started" }));
     responseStream.end();
+    
+    // Create DynamoDB client
+    const dynamoClient = createDynamoClient({ region: 'us-east-1' });
+    
+    // Check if this is a scheduled check event
+    const isScheduledCheck = isScheduledCheckEvent(event);
+    console.log("Is scheduled check:", isScheduledCheck);
+    
+    if (isScheduledCheck) {
+        // Process all projects for scheduled check
+        console.log("Running scheduled check for all projects");
+        
+        const results = {};
+        
+        // Process each project
+        for (const projectName of projectNames) {
+            try {
+                // Find the webhook URL for this project
+                const channelKey = Object.keys(slackChannels).find(key => key.includes(projectName));
+                if (!channelKey) {
+                    console.log(`No webhook URL found for project ${projectName}, skipping`);
+                    continue;
+                }
+                
+                const webhookUrl = slackChannels[channelKey];
+                
+                // Process events for this project
+                const result = await processProjectEvents({
+                    projectName,
+                    webhookUrl,
+                    dynamoClient,
+                    isScheduledCheck: true
+                });
+                
+                results[projectName] = result;
+            } catch (error) {
+                console.error(`Error processing project ${projectName}:`, error);
+                results[projectName] = { success: false, error: error.message };
+            }
+        }
+        
+        console.log("Scheduled check results:", results);
+        return;
+    }
+    
+    // Regular webhook event processing
+    const source = identifyWebhookSource(event);
+    console.log("Webhook source:", source);
     
     // Generate the Slack message
     const message = await generateSlackMessage(event, source);
@@ -92,9 +210,6 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream,
     // Determine which Slack channel to use
     const webhookUrl = await determineSlackChannel(event, source, slackChannels);
     console.log("Selected webhook URL:", webhookUrl);
-    
-    // Create DynamoDB client
-    const dynamoClient = createDynamoClient({ region: 'us-east-1' });
     
     try {
         // Get project name from webhook URL
@@ -114,34 +229,13 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream,
         });
         console.log("Stored event in DynamoDB:", storeResult);
         
-        // Get all events for this project
-        const getResult = await getAllProjectEvents({
+        // Process events for this project
+        await processProjectEvents({
             projectName,
-            dynamoClient
+            webhookUrl,
+            dynamoClient,
+            isScheduledCheck: false
         });
-        console.log(`Retrieved ${getResult.events.length} events for project ${projectName}`);
-        
-        // Check if we should send a summary (5 or more events)
-        if (shouldSendSummary(getResult.events)) {
-            console.log(`Generating summary for ${getResult.events.length} events`);
-            
-            // Generate a summary report
-            const summaryMessage = await generateEventSummary(getResult.events, projectName);
-            
-            // Post the summary to Slack
-            const slackResponse = await postToSlack(webhookUrl, summaryMessage);
-            console.log("Posted summary to Slack:", slackResponse);
-            
-            // Delete the processed events from DynamoDB
-            const deleteResult = await batchDeleteEvents({
-                events: getResult.events,
-                dynamoClient
-            });
-            console.log("Deleted processed events:", deleteResult);
-        } else {
-            // Not enough events for a summary yet, just log the count
-            console.log(`Only ${getResult.events.length} events for ${projectName}, not sending summary yet`);
-        }
     } catch (error) {
         console.error("Error processing event:", error);
         

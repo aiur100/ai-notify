@@ -129,11 +129,52 @@ export const getProjectNameFromWebhook = (webhookUrl, slackChannels) => {
 };
 
 /**
- * Determines if we should send a summary based on event count
+ * Determines if we should send a summary based on event count or time threshold
  * @param {Array} events - Array of events from DynamoDB
- * @param {number} threshold - The threshold count to trigger a summary (default: 5)
+ * @param {Object} options - Options for determining when to send a summary
+ * @param {number} options.countThreshold - The threshold count to trigger a summary (default: 5)
+ * @param {number} options.maxAgeSeconds - The maximum age in seconds before sending a summary regardless of count (default: 540 seconds / 9 minutes)
+ * @param {boolean} options.isScheduledCheck - Whether this is a scheduled check (default: false)
  * @returns {boolean} - True if we should send a summary
  */
-export const shouldSendSummary = (events, threshold = 5) => {
-  return events && events.length >= threshold;
+export const shouldSendSummary = (events, options = {}) => {
+  const {
+    countThreshold = 5,
+    maxAgeSeconds = 540, // 9 minutes
+    isScheduledCheck = false
+  } = options;
+  
+  // If there are no events, don't send a summary
+  if (!events || events.length === 0) {
+    return false;
+  }
+  
+  // If we have enough events, always send a summary
+  if (events.length >= countThreshold) {
+    return true;
+  }
+  
+  // If this is a scheduled check and we have at least one event, check its age
+  if (isScheduledCheck && events.length > 0) {
+    // Sort events by eventTime (ascending)
+    const sortedEvents = [...events].sort((a, b) => a.eventTime - b.eventTime);
+    
+    // Get the oldest event
+    const oldestEvent = sortedEvents[0];
+    
+    // Get current time in seconds
+    const currentTimeSeconds = Math.floor(Date.now() / 1000);
+    
+    // Calculate age of the oldest event in seconds
+    const oldestEventAgeSeconds = currentTimeSeconds - oldestEvent.eventTime;
+    
+    // If the oldest event is older than the maxAgeSeconds, send a summary
+    if (oldestEventAgeSeconds >= maxAgeSeconds) {
+      console.log(`Oldest event is ${oldestEventAgeSeconds} seconds old, exceeding threshold of ${maxAgeSeconds} seconds`);
+      return true;
+    }
+  }
+  
+  // Otherwise, don't send a summary yet
+  return false;
 };
