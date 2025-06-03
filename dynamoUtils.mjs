@@ -41,8 +41,8 @@ export async function storeEvent({ projectName, event, dynamoClient }) {
   // Current time in seconds (unix timestamp)
   const currentTimeSeconds = Math.floor(Date.now() / 1000);
   
-  // TTL set to 10 minutes from now (in seconds)
-  const ttl = currentTimeSeconds + (10 * 60);
+  // TTL set to 24 hours from now (in seconds)
+  const ttl = currentTimeSeconds + (24 * 60 * 60);
   
   const params = {
     TableName: 'team-events',

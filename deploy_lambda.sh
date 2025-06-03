@@ -8,7 +8,7 @@ PROJECT_NAME="pasley-assist"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 LAMBDA_FUNCTION_NAME="alertSystem"
 REGION="us-east-1"
-PROFILE="vahelp"
+PROFILE="pasley_hill"
 ZIP_FILE="${PROJECT_NAME}_lambda_${TIMESTAMP}.zip"
 ENV_FILE="env.json"
 
@@ -43,12 +43,21 @@ fi
 
 # Extract environment variables from env.json
 echo "Extracting environment variables from ${ENV_FILE}..."
-ENV_VARS=$(jq -r '.MyFunction | to_entries | map("\(.key)=\(.value|tostring)") | join(",")' "${ENV_FILE}")
 
-if [ -z "${ENV_VARS}" ]; then
+# Use jq to extract environment variables directly in the format needed by AWS CLI
+ENV_VARS_STR=$(jq -r 'keys[] as $k | "\($k)=\(.[$k])"' "${ENV_FILE}" | sed 's/^/"/;s/$/"/' | tr '\n' ',' | sed 's/,$//')
+
+# Check if extraction was successful
+if [ -z "$ENV_VARS_STR" ]; then
     echo "Error: Failed to extract environment variables from ${ENV_FILE}!"
     exit 1
 fi
+
+echo "Environment variables extracted successfully."
+
+# Print the first few environment variables for verification (truncated for security)
+echo "First few environment variables (truncated):"
+echo "$ENV_VARS_STR" | tr ',' '\n' | head -3 | sed 's/=.*$/=*****/g'
 
 # Update Lambda function code
 echo "Updating Lambda function code..."
@@ -105,7 +114,7 @@ fi
 echo "Updating Lambda function environment variables..."
 aws lambda update-function-configuration \
     --function-name "${LAMBDA_FUNCTION_NAME}" \
-    --environment "Variables={${ENV_VARS}}" \
+    --environment "Variables={${ENV_VARS_STR}}" \
     --region "${REGION}" \
     --profile "${PROFILE}"
 
