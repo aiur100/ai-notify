@@ -1,6 +1,6 @@
 import { generateSlackMessage, determineSlackChannel } from './agents.mjs';
 import { createDynamoClient, storeEvent, getAllProjectEvents, batchDeleteEvents } from './dynamoUtils.mjs';
-import { generateEventSummary, shouldSendSummary } from './eventSummary.mjs';
+import { generateEventSummary, shouldSendSummary, generateConsolidatedSummary } from './eventSummary.mjs';
 import { determineProjectName } from './projectDetection.mjs';
 
 /**
@@ -87,44 +87,127 @@ const projectNames = ['redline', 'lymphapress', 'silo-down', 'pasley-hill'];
  */
 async function processProjectEvents({ projectName, webhookUrl, dynamoClient, isScheduledCheck = false }) {
     console.log(`Processing events for project: ${projectName}, scheduled check: ${isScheduledCheck}`);
-    
-    // Get all events for this project
+
     const getResult = await getAllProjectEvents({
         projectName,
         dynamoClient
     });
     console.log(`Retrieved ${getResult.events.length} events for project ${projectName}`);
-    
-    // Check if we should send a summary based on count or time threshold
-    if (shouldSendSummary(getResult.events, { isScheduledCheck })) {
-        console.log(`Generating summary for ${getResult.events.length} events`);
-        
-        // Generate a summary report
-        const summaryMessage = await generateEventSummary(getResult.events, projectName);
-        
-        // Post the summary to Slack
-        const slackResponse = await postToSlack(webhookUrl, summaryMessage);
-        console.log("Posted summary to Slack:", slackResponse);
-        
-        // Delete the processed events from DynamoDB
-        const deleteResult = await batchDeleteEvents({
-            events: getResult.events,
-            dynamoClient
-        });
-        console.log("Deleted processed events:", deleteResult);
-        
+
+    const allEvents = getResult.events;
+    if (allEvents.length === 0) {
+        console.log(`No events to process for project ${projectName}.`);
         return {
             success: true,
-            action: 'summary_sent',
-            eventCount: getResult.events.length
+            action: 'no_events_to_process',
+            eventCount: 0
         };
+    }
+
+    const MAX_EVENTS_PER_CHUNK = process.env.MAX_EVENTS_PER_CHUNK ? parseInt(process.env.MAX_EVENTS_PER_CHUNK) : 15;
+
+    if (shouldSendSummary(allEvents, { isScheduledCheck })) {
+        console.log(`Need to process ${allEvents.length} events for ${projectName}. Chunking (max ${MAX_EVENTS_PER_CHUNK} per chunk) to create a single consolidated summary.`);
+
+        const partialSummaryTexts = [];
+        let eventsProcessedInChunks = 0;
+        let chunkErrors = 0;
+
+        for (let i = 0; i < allEvents.length; i += MAX_EVENTS_PER_CHUNK) {
+            const chunk = allEvents.slice(i, i + MAX_EVENTS_PER_CHUNK);
+            const chunkNumber = Math.floor(i / MAX_EVENTS_PER_CHUNK) + 1;
+            const totalChunks = Math.ceil(allEvents.length / MAX_EVENTS_PER_CHUNK);
+
+            console.log(`Generating partial summary for chunk ${chunkNumber}/${totalChunks} (${chunk.length} events) for project ${projectName}`);
+
+            try {
+                if (i > 0) await new Promise(resolve => setTimeout(resolve, 1000)); // 1-second delay
+
+                const partialSummaryMessage = await generateEventSummary(chunk, projectName);
+                // We'll use the 'text' field for consolidation. If 'blocks' are preferred, this logic would need adjustment.
+                if (partialSummaryMessage && partialSummaryMessage.text) {
+                    partialSummaryTexts.push(partialSummaryMessage.text);
+                }
+                eventsProcessedInChunks += chunk.length;
+            } catch (error) {
+                console.error(`Error generating partial summary for chunk ${chunkNumber}/${totalChunks} for project ${projectName}: ${error.message}`, error.stack);
+                chunkErrors++;
+                // Decide if we want to stop or continue. For now, let's try to continue and summarize what we can.
+            }
+        }
+
+        console.log(`Finished generating partial summaries. ${partialSummaryTexts.length} partial summaries created. ${chunkErrors} chunk(s) failed.`);
+
+        if (partialSummaryTexts.length === 0 && allEvents.length > 0) {
+            console.error(`No partial summaries were generated for ${projectName}, though there were events. Cannot proceed to final summary.`);
+            return {
+                success: false,
+                action: 'all_chunks_failed_to_summarize',
+                eventCount: allEvents.length,
+                processedInChunks: eventsProcessedInChunks,
+                chunkErrors: chunkErrors
+            };
+        }
+        
+        if (partialSummaryTexts.length === 0 && allEvents.length === 0) { // Should be caught by earlier check but good to have
+             console.log(`No events and no partial summaries for ${projectName}.`);
+             return { success: true, action: 'no_events_to_process', eventCount: 0 };
+        }
+
+        try {
+            let finalSummaryMessage;
+            if (partialSummaryTexts.length === 1 && chunkErrors === 0) {
+                // If only one chunk was successfully processed, and it was the only one, its summary is the final summary.
+                // We need to re-fetch the full message object if we only stored text.
+                // For simplicity now, let's assume generateEventSummary would be called again, or we'd need to store the full object.
+                // Re-generating for now to ensure we get the full block structure for a single successful chunk.
+                // This assumes the first (and only) chunk was allEvents if length is 1.
+                console.log(`Only one partial summary generated, using it as the final summary for ${projectName}.`);
+                finalSummaryMessage = await generateEventSummary(allEvents.slice(0, MAX_EVENTS_PER_CHUNK), projectName);
+            } else {
+                console.log(`Generating consolidated summary from ${partialSummaryTexts.length} partial summaries for ${projectName}.`);
+                // This function will need to be created in eventSummary.mjs
+                finalSummaryMessage = await generateConsolidatedSummary(partialSummaryTexts, projectName);
+            }
+
+            console.log(`Posting final consolidated summary to Slack for ${projectName}.`);
+            const slackResponse = await postToSlack(webhookUrl, finalSummaryMessage);
+            console.log("Posted final summary to Slack:", slackResponse);
+
+            console.log(`Deleting all ${allEvents.length} processed events from DynamoDB for ${projectName}.`);
+            const deleteResult = await batchDeleteEvents({
+                events: allEvents, // Delete all original events
+                dynamoClient
+            });
+            console.log("Deleted all processed events:", deleteResult);
+
+            return {
+                success: true,
+                action: 'consolidated_summary_sent',
+                eventCount: allEvents.length,
+                partialSummariesCount: partialSummaryTexts.length,
+                chunkErrors: chunkErrors
+            };
+
+        } catch (error) {
+            console.error(`Error in final summary generation or posting for project ${projectName}: ${error.message}`, error.stack);
+            // Events are NOT deleted in this case
+            return {
+                success: false,
+                action: 'final_summary_processing_failed',
+                eventCount: allEvents.length,
+                partialSummariesCount: partialSummaryTexts.length,
+                chunkErrors: chunkErrors,
+                error: error.message
+            };
+        }
+
     } else {
-        // Not enough events for a summary yet, just log the count
-        console.log(`Only ${getResult.events.length} events for ${projectName}, not sending summary yet`);
+        console.log(`Only ${allEvents.length} events for ${projectName}, not sending summary yet (threshold not met).`);
         return {
             success: true,
             action: 'no_action_needed',
-            eventCount: getResult.events.length
+            eventCount: allEvents.length
         };
     }
 }
@@ -251,14 +334,7 @@ export const handler = awslambda.streamifyResponse(async (event, responseStream,
             isScheduledCheck: false
         });
     } catch (error) {
+        console.trace(error);
         console.error("Error processing event:", error);
-        
-        // If there's an error, still try to post the original message to Slack as a fallback
-        try {
-            const slackResponse = await postToSlack(webhookUrl, message);
-            console.log("Posted original message to Slack as fallback:", slackResponse);
-        } catch (slackError) {
-            console.error("Error posting to Slack:", slackError);
-        }
     }
 });

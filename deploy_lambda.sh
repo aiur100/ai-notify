@@ -115,8 +115,10 @@ echo "Updating Lambda function environment variables..."
 aws lambda update-function-configuration \
     --function-name "${LAMBDA_FUNCTION_NAME}" \
     --environment "Variables={${ENV_VARS_STR}}" \
+    --timeout 300 \
     --region "${REGION}" \
-    --profile "${PROFILE}"
+    --profile "${PROFILE}" \
+    --output text
 
 if [ $? -ne 0 ]; then
     echo "Error: Lambda function environment variables update failed!"
