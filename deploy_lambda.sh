@@ -45,7 +45,7 @@ fi
 echo "Extracting environment variables from ${ENV_FILE}..."
 
 # Use jq to extract environment variables directly in the format needed by AWS CLI
-ENV_VARS_STR=$(jq -r 'keys[] as $k | "\($k)=\(.[$k])"' "${ENV_FILE}" | sed 's/^/"/;s/$/"/' | tr '\n' ',' | sed 's/,$//')
+ENV_VARS_STR=$(jq -r '.MyFunction | keys_unsorted[] as $k | "\($k)=\(.[$k])"' "${ENV_FILE}" | tr '\n' ',' | sed 's/,$//')
 
 # Check if extraction was successful
 if [ -z "$ENV_VARS_STR" ]; then

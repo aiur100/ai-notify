@@ -2,7 +2,7 @@
  * Functions for summarizing multiple events into a concise report
  */
 import { callOpenAI } from './openai.mjs';
-
+const model = 'o3-2025-04-16';
 /**
  * Generates a summary report from multiple events
  * @param {Array} events - Array of events from DynamoDB
@@ -30,16 +30,16 @@ export const generateEventSummary = async (events, projectName) => {
   const MAX_EVENT_DATA_STRING_LENGTH = 3000; 
 
   const eventData = events.map(event => {
-    let dataPayload = event.data; // Default to original data
+    let dataPayload = event.data.message; // Default to original data
     try {
-      const stringifiedData = JSON.stringify(event.data);
+      const stringifiedData = JSON.stringify(event.data.message);
       if (stringifiedData.length > MAX_EVENT_DATA_STRING_LENGTH) {
-        if (typeof event.data === 'object' && event.data !== null) {
+        if (typeof event.data.message === 'object' && event.data.message !== null) {
           dataPayload = {
             _summary_note: `Original event data was too large (${stringifiedData.length} chars) and has been truncated. Displaying top-level keys.`,
-            _keys: Object.keys(event.data).slice(0, 10) // Show first 10 keys
+            _keys: Object.keys(event.data.message).slice(0, 10) // Show first 10 keys
           };
-          if (Object.keys(event.data).length > 10) {
+          if (Object.keys(event.data.message).length > 10) {
             dataPayload._keys.push("...and more");
           }
         } else {
@@ -52,7 +52,7 @@ export const generateEventSummary = async (events, projectName) => {
       console.warn(`Failed to process or stringify event.data for event at ${new Date(event.eventTime * 1000).toISOString()}: ${e.message}`);
       dataPayload = { 
         _error_note: "Could not process or stringify event data due to an error.", 
-        _original_type: typeof event.data,
+        _original_type: typeof event.data.message,
         _error_details: String(e).substring(0,200) // Keep error message concise
       };
     }
@@ -84,7 +84,7 @@ export const generateEventSummary = async (events, projectName) => {
 
   // Create a prompt for the AI to generate a summary report
   const prompt = `
-Create a concise, actionable summary for ${projectName} based on ${events.length} recent events.
+Create a concise, actionable summary for ${projectName} based on ${events.length} recent events that is extremely accurate.
 
 Event data:
 ${JSON.stringify(eventData, null, 2)}
@@ -95,7 +95,7 @@ Guidelines:
 3. Highlight only the most important developments, changes, or blockers
 4. Be extremely concise - aim for brevity while maintaining clarity
 5. Use Slack Block Kit format with appropriate emojis
-6. Include actionable insights or next steps if relevant
+6. Include actionable insights, only if absolutely necessary.
 
 Your summary should tell the story of recent activity in a way that gives engineers immediate understanding without unnecessary details.
 
@@ -112,7 +112,7 @@ Respond with a JSON object containing:
       'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
     },
     body: JSON.stringify({
-      model: "gpt-4o",
+      model,
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_schema", 
         json_schema: { name: "generateEventSummary", schema: responseSchema } }
@@ -179,7 +179,7 @@ export const generateConsolidatedSummary = async (partialSummaryTexts, projectNa
 Project: ${projectName}
 
 The following are several partial summaries generated from different sets of recent events.
-Your task is to synthesize these into a SINGLE, COHERENT, and CONCISE summary.
+Your task is to synthesize these into a SINGLE, COHERENT, ACCURATE, and CONCISE summary.
 Avoid redundancy. Focus on the overall narrative and the most important developments.
 
 Partial Summaries:
@@ -190,7 +190,7 @@ Guidelines:
 2. Identify overarching themes or critical updates across all partials.
 3. Be extremely concise - aim for brevity while maintaining clarity.
 4. Use Slack Block Kit format with appropriate emojis.
-5. Include actionable insights or next steps if relevant from the combined information.
+5. Include actionable insights, only if absolutely necessary.
 6. The final output should feel like one single report, not a collection of smaller ones.
 
 Respond with a JSON object containing:
@@ -206,7 +206,7 @@ Respond with a JSON object containing:
       'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
     },
     body: JSON.stringify({
-      model: "gpt-4o", // Or your preferred model
+      model,
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_schema", 
         json_schema: { name: "generateConsolidatedSummary", schema: responseSchema } }

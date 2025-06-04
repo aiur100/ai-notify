@@ -1,7 +1,7 @@
 import { callOpenAI } from './openai.mjs';
 import fs from 'fs/promises';
 import path from 'path';
-
+const model = 'o3-2025-04-16';
 /**
  * Generates a formatted Slack message using OpenAI based on webhook event data
  * Uses Slack Block Kit to create rich, interactive messages
@@ -52,18 +52,18 @@ export const generateSlackMessage = async (event, source) => {
   // Create a prompt for the AI to generate a rich Slack message
   const prompt = `
   
-Create a concise, slack message about this ${eventType} using Slack Block Kit formatting.
+Create a concise, and accurate, slack message about this ${eventType} using Slack Block Kit formatting.
 The goal is to keep our development team informed, so be concise and to the point is important. 
 
 Event details:
 ${eventData}
 
 Requirements:
-1. Use the Slack Block Kit format to create a visually appealing message
+1. Use the Slack Block Kit format to create a message
 2. Include relevant details that software team members would find useful, but be as concise as possible as well.
 3. Use a few meaningful emojis and maintain a fun, positive tone
-4. Include a relevant joke or witty comment if appropriate
-5. Be creative with the formatting, using appropriate block types
+4. Include a programming joke.
+5. Using the block kit formatting correctly, and appropriately to the informatio being conveyed.
 
 Here's documentation on Slack Block Kit to help you format the message:
 ${blockKitDocs}
@@ -80,7 +80,7 @@ Respond with a JSON object that contains:
       'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
     },
     body: JSON.stringify({
-      model: "gpt-4o",
+      model,
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_schema", 
         json_schema: { name: "generateSlackMessage", schema: responseSchema } }
@@ -179,7 +179,7 @@ The channel must be one of the available channels listed above.`;
       'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
     },
     body: JSON.stringify({
-      model: "gpt-4o",
+      model,
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_schema", 
         json_schema: { name: "determineSlackChannel", schema: responseSchema } }

@@ -95,7 +95,20 @@ async function processProjectEvents({ projectName, webhookUrl, dynamoClient, isS
     console.log(`Retrieved ${getResult.events.length} events for project ${projectName}`);
 
     const allEvents = getResult.events;
-    if (allEvents.length === 0) {
+
+    // If this is NOT a scheduled check, log and exit. Events are already stored by the main handler.
+    // Summaries are only sent during scheduled checks.
+    if (!isScheduledCheck) {
+        console.log(`Event-triggered invocation for project ${projectName}. Events stored. No summary will be sent now.`);
+        return {
+            success: true,
+            action: 'event_stored_no_summary_sent_on_direct_invocation',
+            eventCount: allEvents.length // This might be 0 if the event was the first for the project
+        };
+    }
+
+    // If it IS a scheduled check, but there are no events, then do nothing.
+    if (allEvents.length === 0) { // This condition is specifically for isScheduledCheck === true
         console.log(`No events to process for project ${projectName}.`);
         return {
             success: true,
@@ -106,7 +119,11 @@ async function processProjectEvents({ projectName, webhookUrl, dynamoClient, isS
 
     const MAX_EVENTS_PER_CHUNK = process.env.MAX_EVENTS_PER_CHUNK ? parseInt(process.env.MAX_EVENTS_PER_CHUNK) : 15;
 
-    if (shouldSendSummary(allEvents, { isScheduledCheck })) {
+    // For scheduled checks, if we have events, we always proceed to summarize and send.
+    // The shouldSendSummary logic is effectively superseded by the isScheduledCheck and allEvents.length > 0 checks.
+    // The original 'else' for shouldSendSummary (threshold not met) is removed because
+    // non-scheduled checks return early, and scheduled checks with events always proceed.
+    console.log(`Scheduled check: Processing ${allEvents.length} events for ${projectName}. Chunking (max ${MAX_EVENTS_PER_CHUNK} per chunk) to create a single consolidated summary.`);
         console.log(`Need to process ${allEvents.length} events for ${projectName}. Chunking (max ${MAX_EVENTS_PER_CHUNK} per chunk) to create a single consolidated summary.`);
 
         const partialSummaryTexts = [];
@@ -202,14 +219,6 @@ async function processProjectEvents({ projectName, webhookUrl, dynamoClient, isS
             };
         }
 
-    } else {
-        console.log(`Only ${allEvents.length} events for ${projectName}, not sending summary yet (threshold not met).`);
-        return {
-            success: true,
-            action: 'no_action_needed',
-            eventCount: allEvents.length
-        };
-    }
 }
 
 /**
